@@ -1,5 +1,69 @@
-FROM consol/ubuntu-xfce-vnc
-MAINTAINER Kristoph Junge <kristoph.junge@gmail.com>
+# This Dockerfile is used to build an headles vnc image based on Ubuntu
+
+FROM ubuntu:16.04
+
+ENV REFRESHED_AT 2018-10-29
+
+LABEL io.k8s.description="Headless VNC Container with Xfce window manager, firefox and chromium" \
+      io.k8s.display-name="Headless VNC Container based on Ubuntu" \
+      io.openshift.expose-services="6901:http,5901:xvnc" \
+      io.openshift.tags="vnc, ubuntu, xfce" \
+      io.openshift.non-scalable=true
+
+## Connection ports for controlling the UI:
+# VNC port:5901
+# noVNC webport, connect via http://IP:6901/?password=vncpassword
+ENV DISPLAY=:1 \
+    VNC_PORT=5901 \
+    NO_VNC_PORT=6901
+EXPOSE $VNC_PORT $NO_VNC_PORT
+
+### Envrionment config
+ENV HOME=/home/ubuntu \
+    TERM=xterm \
+    STARTUPDIR=/dockerstartup \
+    INST_SCRIPTS=/home/ubuntu/install \
+    NO_VNC_HOME=/home/ubuntu/noVNC \
+    DEBIAN_FRONTEND=noninteractive \
+    VNC_COL_DEPTH=24 \
+    VNC_RESOLUTION=1280x1024 \
+    VNC_PW=vncpassword \
+    VNC_VIEW_ONLY=false
+WORKDIR $HOME
+
+### Add all install scripts for further steps
+ADD ./src/common/install/ $INST_SCRIPTS/
+ADD ./src/ubuntu/install/ $INST_SCRIPTS/
+RUN find $INST_SCRIPTS -name '*.sh' -exec chmod a+x {} +
+
+### Install some common tools
+RUN $INST_SCRIPTS/tools.sh
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
+
+### Install custom fonts
+RUN $INST_SCRIPTS/install_custom_fonts.sh
+
+### Install xvnc-server & noVNC - HTML5 based VNC viewer
+RUN $INST_SCRIPTS/tigervnc.sh
+RUN $INST_SCRIPTS/no_vnc.sh
+
+### Install firefox and chrome browser
+RUN $INST_SCRIPTS/firefox.sh
+RUN $INST_SCRIPTS/chrome.sh
+
+### Install xfce UI
+RUN $INST_SCRIPTS/xfce_ui.sh
+ADD ./src/common/xfce/ $HOME/
+
+### configure startup
+RUN $INST_SCRIPTS/libnss_wrapper.sh
+ADD ./src/common/scripts $STARTUPDIR
+RUN $INST_SCRIPTS/set_user_permission.sh $STARTUPDIR $HOME
+
+USER 1000
+
+ENTRYPOINT ["/dockerstartup/vnc_startup.sh"]
+CMD ["--wait"]
 
 # Switch to root user to install additional software
 USER 0
@@ -42,8 +106,8 @@ RUN mkdir -p /usr/local/android-sdk-linux && \
     rm tools.zip
 
 # Set environment variable
-ENV ANDROID_HOME /usr/local/android-sdk-linux
-ENV PATH ${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
+ENV ANDROID_HOME=/usr/local/android-sdk-linux \
+    PATH=${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
 
 # Make license agreement
 RUN mkdir $ANDROID_HOME/licenses && \
@@ -53,10 +117,9 @@ RUN mkdir $ANDROID_HOME/licenses && \
     echo 84831b9409646a918e30573bab4c9c91346d8abd > $ANDROID_HOME/licenses/android-sdk-preview-license
 
 # Update and install using sdkmanager
-RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" && \
-    $ANDROID_HOME/tools/bin/sdkmanager "build-tools;28.0.3" "build-tools;27.0.3" && \
-    $ANDROID_HOME/tools/bin/sdkmanager "platforms;android-28" "platforms;android-27" && \
-    $ANDROID_HOME/tools/bin/sdkmanager "extras;android;m2repository" "extras;google;m2repository"
+RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86"
+
+RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-29;default;x86"
 
 RUN apt-get update && \
   apt-get -y install sudo
@@ -126,8 +189,10 @@ RUN set -ex \
   # smoke test
   && yarn --version
 
-RUN groupadd --gid 1000 ubuntu \
-  && useradd --uid 1000 --gid ubuntu --shell /bin/bash --create-home ubuntu
+RUN groupadd --gid 1000 ubuntu && \
+  useradd --uid 1000 --gid ubuntu --shell /bin/bash --create-home ubuntu && \
+  adduser ubuntu sudo && \
+  (echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers)
 
 RUN mkdir /app  && \
     chown ubuntu:ubuntu /app
@@ -140,5 +205,22 @@ ENV PATH=/home/ubuntu/.npm-global/bin:$PATH \
 
 # NativeScript
 RUN mkdir /home/ubuntu/.npm-global && \
-    npm install -g nativescript && \
-    tns error-reporting disable
+    npm install -g nativescript
+    # tns platform update android
+    # tns error-reporting disable
+
+# https://docs.nativescript.org/sidekick/intro/installation
+RUN sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
+    curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
+    sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
+
+# FROM export JAVA_HOME=$(update-alternatives --query javac | sed -n -e 's/Best: *\(.*\)\/bin\/javac/\1/p')
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
+# RUN sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
+RUN curl --location https://redirector.gvt1.com/edgedl/android/studio/ide-zips/3.6.2.0/android-studio-ide-192.6308749-linux.tar.gz -o /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz && \
+    sudo tar xvzf /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz -C /usr/local/
+
+RUN sudo adduser ubuntu root
+
+# export HOME=/home/ubuntu/
