@@ -70,59 +70,28 @@ USER 0
 
 # Utilities
 RUN apt-get update && \
-    apt-get -y install apt-transport-https unzip curl usbutils --no-install-recommends && \
+    apt-get -y install apt-transport-https unzip curl usbutils software-properties-common libc6 libstdc++6 zlib1g libncurses5 build-essential libssl-dev ruby ruby-dev sudo xz-utils --no-install-recommends && \
     rm -r /var/lib/apt/lists/*
 
-# JAVA
-RUN apt-get update && \
-    apt-get -y install default-jdk --no-install-recommends && \
-    rm -r /var/lib/apt/lists/*
-
-###############################
-# https://hub.docker.com/r/chibatching/docker-android-sdk/dockerfile
+RUN groupadd --gid 1000 ubuntu && \
+  useradd --uid 1000 --gid ubuntu --shell /bin/bash --create-home ubuntu && \
+  adduser ubuntu sudo && \
+  adduser ubuntu root && \
+  (echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers)
 
 # jdk8
 # https://github.com/carlos3g/my-linux-workspace/blob/d29a68ef7c/ubuntu/workspace.sh
 RUN apt-get update && \
-    apt-get -y install software-properties-common && \
     add-apt-repository ppa:openjdk-r/ppa && \
     apt-get -y update && \
     apt-get -y install openjdk-8-jdk && \
     rm -r /var/lib/apt/lists/*
 
+# FROM export JAVA_HOME=$(update-alternatives --query javac | sed -n -e 's/Best: *\(.*\)\/bin\/javac/\1/p')
+ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+
 # Android build requirements
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    apt-get update && \
-    apt-get install -yq libc6 libstdc++6 zlib1g libncurses5 build-essential libssl-dev ruby ruby-dev --no-install-recommends && \
-    apt-get clean
-
 RUN gem install bundler
-
-# Download and untar Android SDK tools
-RUN mkdir -p /usr/local/android-sdk-linux && \
-    wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O tools.zip && \
-    unzip tools.zip -d /usr/local/android-sdk-linux && \
-    rm tools.zip
-
-# Set environment variable
-ENV ANDROID_HOME=/usr/local/android-sdk-linux \
-    PATH=${ANDROID_HOME}/tools:$ANDROID_HOME/platform-tools:$PATH
-
-# Make license agreement
-RUN mkdir $ANDROID_HOME/licenses && \
-    echo 8933bad161af4178b1185d1a37fbf41ea5269c55 > $ANDROID_HOME/licenses/android-sdk-license && \
-    echo d56f5187479451eabf01fb78af6dfcb131a6481e >> $ANDROID_HOME/licenses/android-sdk-license && \
-    echo 24333f8a63b6825ea9c5514f83c2829b004d1fee >> $ANDROID_HOME/licenses/android-sdk-license && \
-    echo 84831b9409646a918e30573bab4c9c91346d8abd > $ANDROID_HOME/licenses/android-sdk-preview-license
-
-# Update and install using sdkmanager
-RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86"
-
-RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-29;default;x86"
-
-RUN apt-get update && \
-  apt-get -y install sudo
 
 ##############################
 
@@ -161,6 +130,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && curl -fsSLO --compressed "https://nodejs.org/dist/v$NODE_VERSION/SHASUMS256.txt.asc" \
   && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
   && grep " node-v$NODE_VERSION-linux-$ARCH.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
+  && mkdir -p /usr/local/bin \
   && tar -xJf "node-v$NODE_VERSION-linux-$ARCH.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \
   && rm "node-v$NODE_VERSION-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
   && ln -s /usr/local/bin/node /usr/local/bin/nodejs \
@@ -189,10 +159,31 @@ RUN set -ex \
   # smoke test
   && yarn --version
 
-RUN groupadd --gid 1000 ubuntu && \
-  useradd --uid 1000 --gid ubuntu --shell /bin/bash --create-home ubuntu && \
-  adduser ubuntu sudo && \
-  (echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers)
+###############################
+# https://hub.docker.com/r/chibatching/docker-android-sdk/dockerfile
+
+# Download and untar Android SDK tools
+RUN mkdir -p /usr/local/android-sdk-linux && \
+    wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O tools.zip && \
+    chown ubuntu:ubuntu /usr/local/android-sdk-linux && \
+    su ubuntu -c 'unzip tools.zip -d /usr/local/android-sdk-linux' && \
+    rm tools.zip
+
+# Set environment variable
+ENV ANDROID_HOME=/usr/local/android-sdk-linux \
+    PATH=$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+
+# Make license agreement
+RUN mkdir $ANDROID_HOME/licenses && \
+    echo 8933bad161af4178b1185d1a37fbf41ea5269c55 > $ANDROID_HOME/licenses/android-sdk-license && \
+    echo d56f5187479451eabf01fb78af6dfcb131a6481e >> $ANDROID_HOME/licenses/android-sdk-license && \
+    echo 24333f8a63b6825ea9c5514f83c2829b004d1fee >> $ANDROID_HOME/licenses/android-sdk-license && \
+    echo 84831b9409646a918e30573bab4c9c91346d8abd > $ANDROID_HOME/licenses/android-sdk-preview-license
+
+# Update and install using sdkmanager
+RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86"
+
+RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-29;default;x86"
 
 RUN mkdir /app  && \
     chown ubuntu:ubuntu /app
@@ -210,17 +201,13 @@ RUN mkdir /home/ubuntu/.npm-global && \
     # tns error-reporting disable
 
 # https://docs.nativescript.org/sidekick/intro/installation
-RUN sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
+RUN sudo apt-get update && \
+    sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
     curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
     sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
-
-# FROM export JAVA_HOME=$(update-alternatives --query javac | sed -n -e 's/Best: *\(.*\)\/bin\/javac/\1/p')
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 
 # RUN sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
 RUN curl --location https://redirector.gvt1.com/edgedl/android/studio/ide-zips/3.6.2.0/android-studio-ide-192.6308749-linux.tar.gz -o /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz && \
     sudo tar xvzf /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz -C /usr/local/
 
-RUN sudo adduser ubuntu root
-
-# export HOME=/home/ubuntu/
+# /usr/local/android-studio/bin/studio.sh
