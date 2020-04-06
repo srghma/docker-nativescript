@@ -181,7 +181,9 @@ RUN mkdir $ANDROID_HOME/licenses && \
     echo 84831b9409646a918e30573bab4c9c91346d8abd > $ANDROID_HOME/licenses/android-sdk-preview-license
 
 # Update and install using sdkmanager
-RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86"
+# from
+# $ANDROID_HOME/tools/bin/sdkmanager --list
+RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86" "system-images;android-29;google_apis;x86" "sources;android-29"
 
 RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-29;default;x86"
 
