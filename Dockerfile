@@ -205,6 +205,7 @@ RUN mkdir /home/ubuntu/.npm-global && \
     # tns error-reporting disable
 
 # https://docs.nativescript.org/sidekick/intro/installation
+# to open: top navbar -> applications -> development -> sidekick OR open with ....
 RUN sudo apt-get update && \
     sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
     curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
