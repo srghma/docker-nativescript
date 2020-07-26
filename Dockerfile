@@ -27,7 +27,7 @@ ENV HOME=/home/ubuntu \
     DEBIAN_FRONTEND=noninteractive \
     VNC_COL_DEPTH=24 \
     VNC_RESOLUTION=1280x1024 \
-    VNC_PW=vncpassword \
+    VNC_PW="" \
     VNC_VIEW_ONLY=false
 WORKDIR $HOME
 
@@ -162,16 +162,22 @@ RUN set -ex \
 ###############################
 # https://hub.docker.com/r/chibatching/docker-android-sdk/dockerfile
 
+## switch back to default user
+USER ubuntu
+
 # Download and untar Android SDK tools
-RUN mkdir -p /usr/local/android-sdk-linux && \
+RUN sudo mkdir -p /usr/local/android-sdk-linux && \
+    sudo chown ubuntu:ubuntu /usr/local/android-sdk-linux && \
     wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip -O tools.zip && \
-    chown ubuntu:ubuntu /usr/local/android-sdk-linux && \
-    su ubuntu -c 'unzip tools.zip -d /usr/local/android-sdk-linux' && \
+    unzip tools.zip -d /usr/local/android-sdk-linux && \
     rm tools.zip
 
 # Set environment variable
-ENV ANDROID_HOME=/usr/local/android-sdk-linux \
-    PATH=$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
+ENV ANDROID_HOME=/usr/local/android-sdk-linux
+ENV ANDROID_SDK_ROOT=/usr/local/android-sdk-linux
+
+# important to do that in separate ENV
+ENV PATH=$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
 
 # Make license agreement
 RUN mkdir $ANDROID_HOME/licenses && \
@@ -180,39 +186,84 @@ RUN mkdir $ANDROID_HOME/licenses && \
     echo 24333f8a63b6825ea9c5514f83c2829b004d1fee >> $ANDROID_HOME/licenses/android-sdk-license && \
     echo 84831b9409646a918e30573bab4c9c91346d8abd > $ANDROID_HOME/licenses/android-sdk-preview-license
 
-# Update and install using sdkmanager
-# from
-# $ANDROID_HOME/tools/bin/sdkmanager --list
-RUN $ANDROID_HOME/tools/bin/sdkmanager "tools" "platform-tools" "build-tools;29.0.3" "platforms;android-29" "extras;android;m2repository" "extras;google;m2repository" "emulator" "cmdline-tools;latest" "system-images;android-29;default;x86" "system-images;android-29;google_apis;x86" "sources;android-29"
-
-RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-29;google_apis;x86"
-# $ANDROID_HOME/emulator/emulator-headless @pixel -no-boot-anim -netdelay none -no-snapshot -wipe-data -verbose -show-kernel -no-audio -gpu swiftshader_indirect -no-snapshot &> /tmp/log.txt &
-
-
-RUN mkdir /app  && \
-    chown ubuntu:ubuntu /app
-
-## switch back to default user
-USER ubuntu
+RUN sudo mkdir /app  && \
+    sudo chown ubuntu:ubuntu /app
 
 ENV PATH=/home/ubuntu/.npm-global/bin:$PATH \
     NPM_CONFIG_PREFIX=/home/ubuntu/.npm-global
 
-# NativeScript
-RUN mkdir /home/ubuntu/.npm-global && \
-    npm install -g nativescript
-    # tns platform update android
-    # tns error-reporting disable
+# # NativeScript
+# RUN mkdir /home/ubuntu/.npm-global && \
+#     npm install -g nativescript
+#     # tns platform update android
+#     # tns error-reporting disable
 
-# https://docs.nativescript.org/sidekick/intro/installation
-# to open: top navbar -> applications -> development -> sidekick OR open with ....
-RUN sudo apt-get update && \
-    sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
-    curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
-    sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
+# # https://docs.nativescript.org/sidekick/intro/installation
+# # to open: top navbar -> applications -> development -> sidekick OR open with ....
+# RUN sudo apt-get update && \
+#     sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
+#     curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
+#     sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
 
-# RUN sudo apt-get install libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
 RUN curl --location https://redirector.gvt1.com/edgedl/android/studio/ide-zips/3.6.2.0/android-studio-ide-192.6308749-linux.tar.gz -o /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz && \
-    sudo tar xvzf /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz -C /usr/local/
+    tar xvzf /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz -C /home/ubuntu && \
+    rm -f /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz
 
-# /usr/local/android-studio/bin/studio.sh
+ENV PATH=/home/ubuntu/android-studio/bin:$PATH
+
+# Update and install using sdkmanager
+# from
+# $ANDROID_HOME/tools/bin/sdkmanager --list
+
+RUN echo "y" | $ANDROID_HOME/tools/bin/sdkmanager \
+  "build-tools;30.0.1" \
+  "cmdline-tools;latest" \
+  "emulator" \
+  "extras;android;m2repository" \
+  "extras;google;m2repository" \
+  "patcher;v4" \
+  "platform-tools" \
+  "platforms;android-30" \
+  "sources;android-29" \
+  "system-images;android-30;google_apis;x86" \
+  "tools"
+
+RUN echo "no" | $ANDROID_HOME/tools/bin/avdmanager create avd --device "Nexus 6" --name "Nexus_6" --package "system-images;android-30;google_apis;x86"
+# $ANDROID_HOME/emulator/emulator-headless @pixel -no-boot-anim -netdelay none -no-snapshot -wipe-data -verbose -show-kernel -no-audio -gpu swiftshader_indirect -no-snapshot &> /tmp/log.txt &
+
+# ENV ANDROID_STUDIO_HOME /home/ubuntu/android-studio
+
+# # Install extra Android SDK
+# ENV ANDROID_SDK_EXTRA_COMPONENTS extra-google-google_play_services,extra-google-m2repository,extra-android-m2repository,source-21,addon-google_apis-google-21,sys-img-x86-addon-google_apis-google-21
+# RUN echo y | ${ANDROID_HOME}/tools/android update sdk --no-ui --all --filter "${ANDROID_SDK_EXTRA_COMPONENTS}"
+
+
+ENV GRADLE_HOME /opt/gradle
+ENV GRADLE_VERSION 4.7
+
+ARG GRADLE_DOWNLOAD_SHA256=fca5087dc8b50c64655c000989635664a73b11b9bd3703c7d6cabd31b7dcdb04
+RUN set -o errexit -o nounset \
+  && echo "Downloading Gradle" \
+  && wget --no-verbose --output-document=gradle.zip "https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip" \
+  \
+  && echo "Checking download hash" \
+  && echo "${GRADLE_DOWNLOAD_SHA256} *gradle.zip" | sha256sum --check - \
+  \
+  && echo "Installing Gradle" \
+  && unzip gradle.zip \
+  && rm gradle.zip \
+  && sudo mv "gradle-${GRADLE_VERSION}" "${GRADLE_HOME}/" \
+  && sudo ln --symbolic "${GRADLE_HOME}/bin/gradle" /usr/bin/gradle \
+  \
+  && mkdir /home/ubuntu/.gradle \
+  && sudo chown --recursive ubuntu:ubuntu /home/ubuntu \
+  \
+  && echo "Symlinking root Gradle cache to gradle Gradle cache" \
+  && sudo ln -s /home/ubuntu/.gradle /root/.gradle
+
+RUN npm install -g cordova
+
+# cd /app
+# cordova run android
+# cordova run -- --livereload
+# cordova build -- --webpackConfig webpack.config.js

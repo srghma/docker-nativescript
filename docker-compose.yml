@@ -3,14 +3,13 @@ services:
   app:
     build: .
     container_name: docker-nativescript
-    image: docker-nativescript:0.0.1
+    image: docker-nativescript:0.0.2
     privileged: true
     ports:
       - 5901:5901
       - 6901:6901
     volumes:
-      - /dev/shm:/dev/shm
-      - /home/srghma/projects/nativescript-preact-template/:/app
+      - /home/srghma/projects/cordova-react-starter/:/app
     working_dir: /app
     environment:
       VNC_RESOLUTION: 1920x1080
