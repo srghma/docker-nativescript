@@ -261,7 +261,10 @@ RUN set -o errexit -o nounset \
   && echo "Symlinking root Gradle cache to gradle Gradle cache" \
   && sudo ln -s /home/ubuntu/.gradle /root/.gradle
 
-RUN npm install -g cordova
+RUN npm install -g cordova spago purescript && \
+  sudo add-apt-repository -y ppa:git-core/ppa && sudo apt -y update && sudo apt -y install git
+
+ENV PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/tools:$PATH
 
 # cd /app
 # cordova run android
