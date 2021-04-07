@@ -9,7 +9,11 @@ services:
       - 5901:5901
       - 6901:6901
     volumes:
-      - /home/srghma/projects/purescript-halogen-nextjs/:/app
+      - /dev/shm:/dev/shm
+      - ./app:/app
+      # - /home/srghma/projects/purescript-halogen-nextjs/:/app
+      # - /home/srghma/projects/cordova-react-starter/:/app
+      - /home/srghma/projects/nativescript-preact-template/:/nativescript-preact-template
     working_dir: /app
     environment:
       VNC_RESOLUTION: 1920x1080

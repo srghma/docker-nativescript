@@ -192,19 +192,6 @@ RUN sudo mkdir /app  && \
 ENV PATH=/home/ubuntu/.npm-global/bin:$PATH \
     NPM_CONFIG_PREFIX=/home/ubuntu/.npm-global
 
-# # NativeScript
-# RUN mkdir /home/ubuntu/.npm-global && \
-#     npm install -g nativescript
-#     # tns platform update android
-#     # tns error-reporting disable
-
-# # https://docs.nativescript.org/sidekick/intro/installation
-# # to open: top navbar -> applications -> development -> sidekick OR open with ....
-# RUN sudo apt-get update && \
-#     sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
-#     curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
-#     sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
-
 RUN curl --location https://redirector.gvt1.com/edgedl/android/studio/ide-zips/3.6.2.0/android-studio-ide-192.6308749-linux.tar.gz -o /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz && \
     tar xvzf /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz -C /home/ubuntu && \
     rm -f /home/ubuntu/android-studio-ide-192.6308749-linux.tar.gz
@@ -224,6 +211,7 @@ RUN echo "y" | $ANDROID_HOME/tools/bin/sdkmanager \
   "patcher;v4" \
   "platform-tools" \
   "platforms;android-30" \
+  "platforms;android-28" \
   "sources;android-29" \
   "system-images;android-30;google_apis;x86" \
   "tools"
@@ -265,6 +253,23 @@ RUN npm install -g cordova spago purescript && \
   sudo add-apt-repository -y ppa:git-core/ppa && sudo apt -y update && sudo apt -y install git
 
 ENV PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/tools:$PATH
+
+RUN sudo apt-get update && \
+    sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
+    curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
+    sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
+
+# NativeScript
+RUN mkdir -p /home/ubuntu/.npm-global && \
+    npm cache verify && \
+    npm cache clean --force && \
+    npm install -g nativescript
+
+# RUN tns platform update android
+    # tns error-reporting disable
+
+# https://docs.nativescript.org/sidekick/intro/installation
+# to open sidekick: top navbar -> applications -> development -> sidekick OR open with ....
 
 # cd /app
 # cordova run android
