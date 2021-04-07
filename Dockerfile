@@ -277,3 +277,6 @@ RUN mkdir -p /home/ubuntu/.npm-global && \
 # cordova run android
 # cordova run -- --livereload
 # cordova build -- --webpackConfig webpack.config.js
+
+# ns doctor android
+# cd /app && ns create drawernavigationjs --template @nativescript/template-drawer-navigation
