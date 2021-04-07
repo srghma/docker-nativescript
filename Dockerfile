@@ -202,8 +202,6 @@ ENV PATH=/home/ubuntu/android-studio/bin:$PATH
 # from
 # $ANDROID_HOME/tools/bin/sdkmanager --list
 
-# echo "y" | $ANDROID_HOME/tools/bin/sdkmanager "build-tools;29.0.3"
-
 RUN echo "y" | $ANDROID_HOME/tools/bin/sdkmanager \
   "build-tools;30.0.1" \
   "build-tools;29.0.3" \

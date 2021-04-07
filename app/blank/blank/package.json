@@ -12,12 +12,12 @@
   "license": "SEE LICENSE IN <your-license-filename>",
   "repository": "<fill-your-repository-here>",
   "dependencies": {
-    "@nativescript/theme": "~2.3.0",
-    "tns-core-modules": "~6.5.0"
+    "@nativescript/theme": "~3.0.1",
+    "tns-core-modules": "~6.5.27"
   },
   "devDependencies": {
-    "nativescript-dev-webpack": "~1.5.0",
-    "tns-android": "6.5.0"
+    "nativescript-dev-webpack": "~1.5.1",
+    "tns-android": "6.5.3"
   },
   "gitHead": "20a65d338ae8f8911087ab6615b89363f864b07b",
   "readme": "NativeScript Application"
