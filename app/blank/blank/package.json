@@ -16,7 +16,8 @@
     "tns-core-modules": "~6.5.0"
   },
   "devDependencies": {
-    "nativescript-dev-webpack": "~1.5.0"
+    "nativescript-dev-webpack": "~1.5.0",
+    "tns-android": "6.5.0"
   },
   "gitHead": "20a65d338ae8f8911087ab6615b89363f864b07b",
   "readme": "NativeScript Application"

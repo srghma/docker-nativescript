@@ -202,8 +202,11 @@ ENV PATH=/home/ubuntu/android-studio/bin:$PATH
 # from
 # $ANDROID_HOME/tools/bin/sdkmanager --list
 
+# echo "y" | $ANDROID_HOME/tools/bin/sdkmanager "build-tools;29.0.3"
+
 RUN echo "y" | $ANDROID_HOME/tools/bin/sdkmanager \
   "build-tools;30.0.1" \
+  "build-tools;29.0.3" \
   "cmdline-tools;latest" \
   "emulator" \
   "extras;android;m2repository" \
@@ -265,6 +268,7 @@ RUN mkdir -p /home/ubuntu/.npm-global && \
     npm cache clean --force && \
     npm install -g nativescript
 
+# cd /app/blank/blank/
 # RUN tns platform update android
     # tns error-reporting disable
 
