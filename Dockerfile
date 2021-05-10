@@ -1,6 +1,6 @@
 # This Dockerfile is used to build an headles vnc image based on Ubuntu
 
-FROM ubuntu:16.04
+FROM ubuntu:xenial-20210416
 
 ENV REFRESHED_AT 2018-10-29
 
@@ -250,13 +250,25 @@ RUN set -o errexit -o nounset \
   && echo "Symlinking root Gradle cache to gradle Gradle cache" \
   && sudo ln -s /home/ubuntu/.gradle /root/.gradle
 
-RUN npm install -g cordova spago purescript && \
-  sudo add-apt-repository -y ppa:git-core/ppa && sudo apt -y update && sudo apt -y install git
+USER 0
+
+RUN add-apt-repository -y ppa:git-core/ppa && apt -y update && apt-get -y upgrade && apt-get -y update && apt autoremove -y && apt-get clean && apt-get install -y libc6 git
+
+RUN apt-get update && apt-get install build-essential -y && apt install -y glibc-source
+
+RUN add-apt-repository -y ppa:git-core/ppa && apt -y update && apt-get -y upgrade && apt-get -y update && apt autoremove -y && apt-get clean
+
+RUN apt install -y haskell-stack
+
+USER ubuntu
+
+RUN npm install -g cordova
+# RUN npm install -g spago purescript
 
 ENV PATH=$ANDROID_SDK_ROOT/emulator:$ANDROID_SDK_ROOT/tools:$PATH
 
 RUN sudo apt-get update && \
-    sudo apt-get install -y libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
+    sudo apt-get install -y gconf2 gconf-service libappindicator1 libdbusmenu-glib4 libdbusmenu-gtk4 libindicator7 && \
     curl --location https://sk-autoupdates.nativescript.cloud/v1/update/official/linux/NativeScriptSidekick-amd64.deb -o /home/ubuntu/NativeScriptSidekick-amd64.deb && \
     sudo dpkg -i /home/ubuntu/NativeScriptSidekick-amd64.deb
 
@@ -280,3 +292,72 @@ RUN mkdir -p /home/ubuntu/.npm-global && \
 
 # ns doctor android
 # cd /app && ns create drawernavigationjs --template @nativescript/template-drawer-navigation
+
+# ADD ./src/Studio.deb /tmp/Studio.deb
+
+# RUN sudo apt-get clean && \
+#  sudo apt update && \
+#  sudo apt-get -f install && \
+#  sudo dpkg --configure -a && \
+#  sudo apt-get -f -y install && \
+#  sudo apt-get -u -y dist-upgrade && \
+#  sudo apt-get clean && \
+#  sudo apt update && \
+#  sudo apt-get -f install && \
+#  sudo dpkg --configure -a && \
+#  sudo apt-get -f -y install && \
+#  sudo apt-get -u -y dist-upgrade && \
+#  sudo apt install -y \
+#  libgstreamer1.0-dev \
+#  libgstreamer-plugins-base1.0-dev \
+#  libgstreamer-plugins-good1.0-dev \
+#  libglib2.0-dev \
+#  libgl1-mesa-dev \
+#  libglu1-mesa-dev \
+#  libsm-dev \
+#  libx11-dev \
+#  libx11-xcb-dev \
+#  libexpat-dev \
+#  libxkbcommon-dev \
+#  libxcb1-dev \
+#  libxcb-glx0-dev \
+#  libxcb-icccm4-dev \
+#  libxcb-image0-dev \
+#  libxcb-keysyms1-dev \
+#  libxcb-randr0-dev \
+#  libxcb-render0-dev \
+#  libxcb-render-util0-dev \
+#  libxcb-shape0-dev \
+#  libxcb-shm0-dev \
+#  libxcb-sync-dev \
+#  libxcb-xfixes0-dev \
+#  libxcb-xinerama0-dev \
+#  libxcb-xkb-dev \
+#  libxcb-util-dev \
+#  libexpat1 \
+#  libgstreamer1.0-0 \
+#  libgstreamer-plugins-base1.0-0 \
+#  libgstreamer-plugins-good1.0-0 \
+#  libgstreamer-plugins-bad1.0-0 \
+#  gstreamer1.0-libav \
+#  libglib2.0-0 \
+#  libxkbcommon0 \
+#  libxcb1 \
+#  libxcb-glx0 \
+#  libxcb-randr0 \
+#  libxcb-render0 \
+#  libxcb-shape0 \
+#  libxcb-shm0 \
+#  libxcb-sync1 \
+#  libxcb-xfixes0 \
+#  libxcb-xinerama0 \
+#  libxcb-xkb1 && \
+#  sudo apt-get clean && \
+#  sudo apt update && \
+#  sudo apt-get -f install && \
+#  sudo dpkg --configure -a && \
+#  sudo apt-get -f -y install && \
+#  sudo apt-get -u -y dist-upgrade && \
+#  sudo apt install /tmp/Studio.deb && rm -f /tmp/Studio.deb
+
+# # gstreamer1.0-gl \
